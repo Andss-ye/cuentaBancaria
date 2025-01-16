@@ -6,10 +6,11 @@ export function crearCuenta(cuentas, movimientos) {
   let name;
   while (true) {
     name = prompt("Ingrese su nombre: ");
-    if (!name) { // Verifica si el nombre contiene solo letras
-      break;
+    if (name === "") { // Verifica si el nombre está vacio
+        console.log("El nombre no puede ser vacio. Intente nuevamente.");
     } else {
-      console.log("El nombre no puede ser vacio. Intente nuevamente.");
+        console.log(`Bienvenido ${name.toUpperCase()}`);
+        break;
     }
   }
 
@@ -44,11 +45,11 @@ export function mostrarCuenta(cuentas) {
 // Consultar movimientos de la cuenta
 export function consultarMovimientos(numeroCuenta, movimientos) {
   console.log("\n\n=================== Extracto de movimientos ===================\n");
-  console.log("Tipo de movimiento".padEnd(30) + "Valor".padEnd(15) + "Referencia".padEnd(15) + "Descripción".padEnd(40) + "Fecha y hora");
+  console.log("Tipo de movimiento".padEnd(30) + "Valor".padEnd(15) + "Referencia".padEnd(15) + "Descripción".padEnd(40));
   if (movimientos[numeroCuenta]) {
     for (const mov of movimientos[numeroCuenta]) {
       console.log(
-        `${mov.tipo.padEnd(30)}${String(mov.valor).padEnd(15)}${String(mov.referencia).padEnd(15)}${mov.descripcion.padEnd(40)}${mov['fecha y hora']}\n`
+        `${mov.tipo.padEnd(30)}${String(mov.valor).padEnd(15)}${String(mov.referencia).padEnd(15)}${mov.descripcion.padEnd(40)}\n`
       );
     }
   } else {
