@@ -1,4 +1,4 @@
-import { generarReferencia } from './utils.js';
+import { generarReferencia } from '../utils.js';
 
 // Consignar dinero a la cuenta del usuario logueado
 export function consignarDinero(cuentas, movimientos) {
