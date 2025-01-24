@@ -1,7 +1,8 @@
 import { generarReferencia } from '../utils.js';
+import { guardarCuenta, guardarMovimientos } from '../db.js';
 
 // Consignar dinero a la cuenta del usuario logueado
-export function consignarDinero(cuentas, movimientos) {
+export async function consignarDinero(cuentas, movimientos) {
     const numeroCuenta = prompt("Ingrese cuenta a consignar:");
 
     // Verificamos si la cuenta existe
@@ -23,13 +24,17 @@ export function consignarDinero(cuentas, movimientos) {
         });
 
         console.log(`Consignación exitosa. Su nuevo saldo es: ${cuentas[numeroCuenta].saldo}`);
+
+        // Después de actualizar los datos en memoria
+        await guardarCuenta(numeroCuenta, cuentas[numeroCuenta]);
+        await guardarMovimientos(numeroCuenta, movimientos[numeroCuenta]);
     } else {
         console.log(`La cuenta ${numeroCuenta} no existe.`);
     }
 }
 
 // Consignar dinero a otra cuenta por número de cuenta o documento
-export function consignarDestinatario(cuentaOrigen, cuentas, movimientos, numeroCuentaActual) {
+export async function consignarDestinatario(cuentaOrigen, cuentas, movimientos, numeroCuentaActual) {
     const opc = parseInt(prompt("1. Consignar por número de cuenta\n2. Consignar por número de documento\nSeleccione una opción:"), 10);
     let cuentaDestinatario = null;
 
@@ -63,6 +68,10 @@ export function consignarDestinatario(cuentaOrigen, cuentas, movimientos, numero
             });
 
             console.log(`Consignación exitosa. Su nuevo saldo es: ${cuentaOrigen.saldo}`);
+
+            // Después de actualizar los datos en memoria
+            await guardarCuenta(numeroCuentaActual, cuentas[numeroCuentaActual]);
+            await guardarMovimientos(numeroCuentaActual, movimientos[numeroCuentaActual]);
         }
     } else {
         console.log("Cuenta no encontrada");
@@ -70,7 +79,7 @@ export function consignarDestinatario(cuentaOrigen, cuentas, movimientos, numero
 }
 
 // Retirar dinero de la cuenta logueada
-export function retirarDinero(cuenta, movimientos, numeroCuentaActual) {
+export async function retirarDinero(cuenta, movimientos, numeroCuentaActual) {
     const valor = parseInt(prompt("¿Cuánto desea retirar de su cuenta?"), 10);
 
     if (valor > cuenta.saldo) {
@@ -88,11 +97,15 @@ export function retirarDinero(cuenta, movimientos, numeroCuentaActual) {
         });
 
         console.log(`Retiro exitoso. Su nuevo saldo es: ${cuenta.saldo}`);
+
+        // Después de actualizar los datos en memoria
+        await guardarCuenta(numeroCuentaActual, cuenta[numeroCuentaActual]);
+        await guardarMovimientos(numeroCuentaActual, movimientos[numeroCuentaActual]);
     }
 }
 
 // Pagar servicios
-export function pagarServicios(cuenta, movimientos, numeroCuentaActual) {
+export async function pagarServicios(cuenta, movimientos, numeroCuentaActual) {
     console.log("Seleccione el servicio que desea pagar:\n1. Agua\n2. Gas\n3. Energía");
     const servicios = { 1: "Agua", 2: "Gas", 3: "Energía" };
     const opc = parseInt(prompt("Ingrese su opción:"), 10);
@@ -116,6 +129,10 @@ export function pagarServicios(cuenta, movimientos, numeroCuentaActual) {
             });
 
             console.log(`Pago exitoso. Su nuevo saldo es: ${cuenta.saldo}`);
+
+            // Después de actualizar los datos en memoria
+            await guardarCuenta(numeroCuentaActual, cuenta[numeroCuentaActual]);
+            await guardarMovimientos(numeroCuentaActual, movimientos[numeroCuentaActual]);
         }
     } else {
         console.log("Opción no válida");

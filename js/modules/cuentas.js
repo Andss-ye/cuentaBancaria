@@ -1,8 +1,9 @@
 // Importar módulos
+import { guardarCuenta, guardarMovimientos } from '../db.js';
 import { validacionCuenta, validacionDocumento } from './validaciones.js';
 
 // Crear una cuenta personalizada para cada usuario
-export function crearCuenta(cuentas, movimientos) {
+export async function crearCuenta(cuentas, movimientos) {
   let name;
   while (true) {
     name = prompt("Ingrese su nombre: ");
@@ -26,8 +27,8 @@ export function crearCuenta(cuentas, movimientos) {
 
   const clave = prompt("Digite la clave que quiere para su cuenta: ");
   const numeroCuenta = validacionCuenta(cuentas); // Generar el número de cuenta
-  cuentas[numeroCuenta] = { documento: document, nombre: name, clave: clave, saldo: 0 };
-  movimientos[numeroCuenta] = []; // Inicializa los movimientos con un array vacío
+  await guardarCuenta(numeroCuenta, { documento: document, nombre: name, clave: clave, saldo: 0 });
+  await guardarMovimientos(numeroCuenta, []);
   return `\n===================== | Bienvenido ${name.toUpperCase()} | ===================== \n\nEl número de su cuenta es: ${numeroCuenta}\n`;
 }
 
