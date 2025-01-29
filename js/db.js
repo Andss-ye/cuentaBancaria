@@ -31,13 +31,24 @@ export async function guardarCuenta(numeroCuenta, dataCuenta) {
     return new Promise((resolve, reject) => {
         const transaction = db.transaction(['cuentas'], 'readwrite');
         const store = transaction.objectStore('cuentas');
-        const request = store.put({
-            numeroCuenta,
-            ...dataCuenta
-        });
-
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
+        
+        const getRequest = store.get(numeroCuenta);
+        
+        getRequest.onsuccess = () => {
+            const existingData = getRequest.result || {};
+            const updatedData = {
+                numeroCuenta,
+                ...existingData,
+                ...dataCuenta,
+                saldo: dataCuenta.saldo
+            };
+            
+            const putRequest = store.put(updatedData);
+            putRequest.onsuccess = () => resolve(putRequest.result);
+            putRequest.onerror = () => reject(putRequest.error);
+        };
+        
+        getRequest.onerror = () => reject(getRequest.error);
     });
 }
 
