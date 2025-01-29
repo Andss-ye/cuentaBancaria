@@ -3,11 +3,16 @@ import { crearCuenta, login, mostrarCuenta, consultarMovimientos } from './modul
 import { consignarDinero, consignarDestinatario, retirarDinero, pagarServicios } from './modules/transacciones.js';
 import { initDB, obtenerCuentas, obtenerMovimientos } from './db.js';
 
-// Variables globales para los datos
 let movimientos = {};
 let cuentas = {};
+let cuentaActual = null;
 
-// Cargar datos al inicio
+const menuPrincipal = document.getElementById('menuPrincipal');
+const loginForm = document.getElementById('loginForm');
+const menuCliente = document.getElementById('menuCliente');
+const modal = document.getElementById('modal');
+
+// Inicialización
 async function inicializarDatos() {
     try {
         await initDB();
@@ -15,98 +20,124 @@ async function inicializarDatos() {
         movimientos = await obtenerMovimientos() || {};
         console.log('Base de datos inicializada:', { cuentas, movimientos });
     } catch (error) {
-        console.error('Error al cargar datos:', error);
+        mostrarModal('Error', 'Error al cargar datos: ' + error.message);
     }
 }
 
-// Ejecución del programa
-async function iniciarPrograma() {
+// Función para mostrar modal
+function mostrarModal(titulo, mensaje) {
+    document.getElementById('modalTitle').textContent = titulo;
+    document.getElementById('modalMessage').textContent = mensaje;
+    modal.classList.remove('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
     await inicializarDatos();
-    let opc = 10;
 
-    while (opc !== 0) {
+    document.getElementById('btnCrearCuenta').addEventListener('click', async () => {
         try {
-            opc = menu();
-            switch (opc) {
-                case 1:
-                    console.log('\nCrear cuenta\n');
-                    const mensaje = await crearCuenta(cuentas, movimientos);
-                    console.log(mensaje);
-                    // Actualizar datos locales después de crear cuenta
-                    cuentas = await obtenerCuentas();
-                    movimientos = await obtenerMovimientos();
-                    break;
-                case 2:
-                    console.log('\nConsignar a mi cuenta\n');
-                    await consignarDinero(cuentas, movimientos);
-                    break;
-                case 3:
-                    console.log('\nLogin');
-                    const numeroCuentaActual = login(cuentas);
-                    const cuentaActual = cuentas[numeroCuentaActual];
-
-                    if (cuentaActual) {
-                        let opcCliente = 10;
-                        while (opcCliente !== 0) {
-                            opcCliente = menuCliente();
-                            switch (opcCliente) {
-                                case 1:
-                                    console.log('\nConsignar a otra cuenta');
-                                    await consignarDestinatario(cuentaActual, cuentas, movimientos, numeroCuentaActual);
-                                    break;
-                                case 2:
-                                    console.log('\nRetirar de su cuenta\n');
-                                    await retirarDinero(cuentaActual, movimientos, numeroCuentaActual);
-                                    break;
-                                case 3:
-                                    console.log('\nPagar servicios\n');
-                                    await pagarServicios(cuentaActual, movimientos, numeroCuentaActual);
-                                    break;
-                                case 4:
-                                    consultarMovimientos(numeroCuentaActual, movimientos);
-                                    break;
-                                case 0:
-                                    console.log('\nSaliendo...');
-                                    break;
-                                default:
-                                    console.log('\nEscoja una opción válida\n');
-                            }
-                        }
-                    } else {
-                        console.log('\nDatos incorrectos, verifíquelos\n');
-                    }
-                    break;
-                case 0:
-                    console.log('\nSaliendo...');
-                    break;
-                default:
-                    console.log('\nEscoja 0 a 3\n');
-            }
+            const mensaje = await crearCuenta(cuentas, movimientos);
+            mostrarModal('Éxito', mensaje);
+            cuentas = await obtenerCuentas();
+            movimientos = await obtenerMovimientos();
         } catch (error) {
-            console.error('Error en el programa:', error);
-            console.log('\nOcurrió un error. Por favor, intente nuevamente.\n');
+            mostrarModal('Error', error.message);
         }
-    }
-}
+    });
 
-// Esperar a que el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    const btnIniciar = document.getElementById('iniciar');
-    btnIniciar.addEventListener('click', iniciarPrograma);
+    document.getElementById('btnConsignar').addEventListener('click', async () => {
+        try {
+            await consignarDinero(cuentas, movimientos);
+            cuentas = await obtenerCuentas();
+            movimientos = await obtenerMovimientos();
+        } catch (error) {
+            mostrarModal('Error', error.message);
+        }
+    });
+
+    document.getElementById('btnLogin').addEventListener('click', () => {
+        menuPrincipal.classList.add('hidden');
+        loginForm.classList.remove('hidden');
+    });
+
+    // Manejo del login
+    document.getElementById('btnSubmitLogin').addEventListener('click', async () => {
+        const numeroCuenta = document.getElementById('numeroCuenta').value;
+        const clave = document.getElementById('clave').value;
+        
+        if (cuentas[numeroCuenta] && cuentas[numeroCuenta].clave === clave) {
+            cuentaActual = numeroCuenta;
+            loginForm.classList.add('hidden');
+            menuCliente.classList.remove('hidden');
+            
+            // Actualizar el título del menú cliente con la información de la cuenta
+            const menuClienteTitle = document.querySelector('#menuCliente h2');
+            menuClienteTitle.innerHTML = `
+                Bienvenido(a) ${cuentas[numeroCuenta].nombre}<br>
+                <span class="text-sm text-gray-600">
+                    Cuenta: ${numeroCuenta}<br>
+                    Saldo: $${cuentas[numeroCuenta].saldo.toLocaleString()}
+                </span>
+            `;
+        } else {
+            mostrarModal('Error', 'Credenciales incorrectas');
+        }
+    });
+
+    document.getElementById('btnBackLogin').addEventListener('click', () => {
+        loginForm.classList.add('hidden');
+        menuPrincipal.classList.remove('hidden')
+    })
+
+    // Botones del menú cliente
+    document.getElementById('btnConsignarOtra').addEventListener('click', async () => {
+        try {
+            await consignarDestinatario(cuentas[cuentaActual], cuentas, movimientos, cuentaActual);
+        } catch (error) {
+            mostrarModal('Error', error.message);
+        }
+    });
+
+    // Agregar botón de cerrar sesión
+    document.getElementById('btnCerrarSesion').addEventListener('click', () => {
+        cuentaActual = null;
+        menuCliente.classList.add('hidden');
+        menuPrincipal.classList.remove('hidden');
+        document.getElementById('numeroCuenta').value = '';
+        document.getElementById('clave').value = '';
+    });
+
+    // Agregar los event listeners faltantes del menú cliente
+    document.getElementById('btnRetirar').addEventListener('click', async () => {
+        try {
+            await retirarDinero(cuentas[cuentaActual], movimientos, cuentaActual);
+            cuentas = await obtenerCuentas();
+            movimientos = await obtenerMovimientos();
+        } catch (error) {
+            mostrarModal('Error', error.message);
+        }
+    });
+
+    document.getElementById('btnPagarServicios').addEventListener('click', async () => {
+        try {
+            await pagarServicios(cuentas[cuentaActual], movimientos, cuentaActual);
+            cuentas = await obtenerCuentas();
+            movimientos = await obtenerMovimientos();
+        } catch (error) {
+            mostrarModal('Error', error.message);
+        }
+    });
+
+    document.getElementById('btnConsultarMovimientos').addEventListener('click', () => {
+        try {
+            consultarMovimientos(cuentaActual, movimientos);
+        } catch (error) {
+            mostrarModal('Error', error.message);
+        }
+    });
+
+    // Cerrar modal
+    document.getElementById('modalClose').addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
 });
-
-// Funciones de menú
-function menu() {
-    console.log('=============================================');
-    console.log('BIENVENIDO AL SISTEMA\n 1. Crear cuenta\n 2. Realizar consignación \n 3. Login\n 0. Salir del programa');
-    const opc = parseInt(prompt('Ponga una opción:'));
-    return opc;
-}
-
-function menuCliente() {
-    console.log('=============================================');
-    console.log('BIENVENIDO AL LOGIN\n 1. Consignar dinero a una cuenta\n 2. Retirar dinero de su cuenta\n 3. Pagar servicios \n 4. Consultar movimientos \n 0. Salir de la cuenta');
-    console.log('=============================================');
-    const opc = parseInt(prompt('Ponga una opción:'));
-    return opc;
-}
