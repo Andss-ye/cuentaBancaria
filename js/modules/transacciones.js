@@ -72,6 +72,15 @@ export async function consignarDestinatario(cuentaOrigen, cuentas, movimientos, 
             // Después de actualizar los datos en memoria
             await guardarCuenta(numeroCuentaActual, cuentas[numeroCuentaActual]);
             await guardarMovimientos(numeroCuentaActual, movimientos[numeroCuentaActual]);
+
+            const menuClienteTitle = document.querySelector('#menuCliente h2');
+            menuClienteTitle.innerHTML = `
+                Bienvenido(a) ${cuentaOrigen.nombre}<br>
+                <span class="text-sm text-gray-600">
+                    Cuenta: ${numeroCuentaActual}<br>
+                    Saldo: $${cuentaOrigen.saldo}
+                </span>
+            `;
         }
     } else {
         console.log("Cuenta no encontrada");
@@ -87,20 +96,38 @@ export async function retirarDinero(cuenta, movimientos, numeroCuentaActual) {
     } else if (valor <= 0) {
         console.log("El valor a retirar debe ser mayor a cero");
     } else {
-        cuenta.saldo -= valor;
+        const nuevoSaldo = cuenta.saldo - valor;
+        
+        // Actualizamos solo el saldo manteniendo el resto de la información
+        await guardarCuenta(numeroCuentaActual, {
+            ...cuenta,
+            saldo: nuevoSaldo
+        });
+
+        // Actualizamos los movimientos
+        if (!movimientos[numeroCuentaActual]) {
+            movimientos[numeroCuentaActual] = [];
+        }
+        
         movimientos[numeroCuentaActual].push({
             tipo: "Retiro",
             valor: valor,
             referencia: generarReferencia(),
-            descripcion: "Retiro de cuenta",
-            cuenta: numeroCuentaActual
+            descripcion: "Retiro de cuenta"
         });
 
-        console.log(`Retiro exitoso. Su nuevo saldo es: ${cuenta.saldo}`);
-
-        // Después de actualizar los datos en memoria
-        await guardarCuenta(numeroCuentaActual, cuenta[numeroCuentaActual]);
         await guardarMovimientos(numeroCuentaActual, movimientos[numeroCuentaActual]);
+        
+        console.log(`Retiro exitoso. Su nuevo saldo es: ${nuevoSaldo}`);
+        
+        const menuClienteTitle = document.querySelector('#menuCliente h2');
+        menuClienteTitle.innerHTML = `
+            Bienvenido(a) ${cuenta.nombre}<br>
+            <span class="text-sm text-gray-600">
+                Cuenta: ${numeroCuentaActual}<br>
+                Saldo: $${nuevoSaldo.toLocaleString()}
+            </span>
+        `;
     }
 }
 
@@ -119,20 +146,39 @@ export async function pagarServicios(cuenta, movimientos, numeroCuentaActual) {
         } else if (valor <= 0) {
             console.log("El valor del recibo debe ser mayor a cero");
         } else {
-            cuenta.saldo -= valor;
+            const nuevoSaldo = cuenta.saldo - valor;
+
+            // Actualizamos la cuenta con el nuevo saldo
+            await guardarCuenta(numeroCuentaActual, {
+                ...cuenta,
+                saldo: nuevoSaldo
+            });
+
+            // Actualizamos los movimientos
+            if (!movimientos[numeroCuentaActual]) {
+                movimientos[numeroCuentaActual] = [];
+            }
+
             movimientos[numeroCuentaActual].push({
                 tipo: "Pago Servicio",
                 valor: valor,
                 referencia: referencia,
-                descripcion: `Pago de servicio de ${servicios[opc]}`,
-                cuenta: numeroCuentaActual
+                descripcion: `Pago de servicio de ${servicios[opc]}`
             });
 
-            console.log(`Pago exitoso. Su nuevo saldo es: ${cuenta.saldo}`);
-
-            // Después de actualizar los datos en memoria
-            await guardarCuenta(numeroCuentaActual, cuenta[numeroCuentaActual]);
             await guardarMovimientos(numeroCuentaActual, movimientos[numeroCuentaActual]);
+
+            console.log(`Pago exitoso. Su nuevo saldo es: ${nuevoSaldo}`);
+
+            // Actualizamos la información mostrada en la interfaz
+            const menuClienteTitle = document.querySelector('#menuCliente h2');
+            menuClienteTitle.innerHTML = `
+                Bienvenido(a) ${cuenta.nombre}<br>
+                <span class="text-sm text-gray-600">
+                    Cuenta: ${numeroCuentaActual}<br>
+                    Saldo: $${nuevoSaldo.toLocaleString()}
+                </span>
+            `;
         }
     } else {
         console.log("Opción no válida");
