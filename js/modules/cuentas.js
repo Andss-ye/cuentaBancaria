@@ -1,35 +1,27 @@
 // Importar módulos
 import { guardarCuenta, guardarMovimientos } from '../db.js';
-import { validacionCuenta, validacionDocumento } from './validaciones.js';
+import { validacionCuenta } from './validaciones.js';
 
 // Crear una cuenta personalizada para cada usuario
-export async function crearCuenta(cuentas, movimientos) {
-  let name;
-  while (true) {
-    name = prompt("Ingrese su nombre: ");
-    if (name === "") { // Verifica si el nombre está vacio
-        console.log("El nombre no puede ser vacio. Intente nuevamente.");
-    } else {
-        console.log(`Bienvenido ${name.toUpperCase()}`);
-        break;
+export async function crearCuenta(nombre, documento, clave, cuentas, movimientos) {
+    if (nombre === "") {
+        throw new Error("El nombre no puede estar vacío");
     }
-  }
 
-  let document;
-  while (true) {
-    document = validacionDocumento(cuentas);
-    if (document > 0) {
-      break;
-    } else {
-      console.log("El documento debe ser un número positivo. Intente nuevamente.");
+    if (documento <= 0) {
+        throw new Error("El documento debe ser un número positivo");
     }
-  }
 
-  const clave = prompt("Digite la clave que quiere para su cuenta: ");
-  const numeroCuenta = validacionCuenta(cuentas); // Generar el número de cuenta
-  await guardarCuenta(numeroCuenta, { documento: document, nombre: name, clave: clave, saldo: 0 });
-  await guardarMovimientos(numeroCuenta, []);
-  return `\n===================== | Bienvenido ${name.toUpperCase()} | ===================== \n\nEl número de su cuenta es: ${numeroCuenta}\n`;
+    // Validar si el documento ya existe
+    const documentoExiste = Object.values(cuentas).some(cuenta => cuenta.documento === documento);
+    if (documentoExiste) {
+        throw new Error("El documento ya existe en el sistema");
+    }
+
+    const numeroCuenta = validacionCuenta(cuentas);
+    await guardarCuenta(numeroCuenta, { documento, nombre, clave, saldo: 0 });
+    await guardarMovimientos(numeroCuenta, []);
+    return `\n===================== | Bienvenido ${nombre.toUpperCase()} | ===================== \n\nEl número de su cuenta es: ${numeroCuenta}\n`;
 }
 
 // Mostrar cuentas (para pruebas)

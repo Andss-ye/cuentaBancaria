@@ -34,10 +34,27 @@ function mostrarModal(titulo, mensaje) {
 document.addEventListener('DOMContentLoaded', async () => {
     await inicializarDatos();
 
-    document.getElementById('btnCrearCuenta').addEventListener('click', async () => {
+    document.getElementById('btnCrearCuenta').addEventListener('click', () => {
+        menuPrincipal.classList.add('hidden');
+        document.getElementById('crearCuentaForm').classList.remove('hidden');
+    });
+
+    document.getElementById('btnSubmitCrearCuenta').addEventListener('click', async () => {
         try {
-            const mensaje = await crearCuenta(cuentas, movimientos);
+            const nombre = document.getElementById('nombreCrearCuenta').value;
+            const documento = parseInt(document.getElementById('documentoCrearCuenta').value);
+            const clave = document.getElementById('claveCrearCuenta').value;
+            
+            const mensaje = await crearCuenta(nombre, documento, clave, cuentas, movimientos);
             mostrarModal('Éxito', mensaje);
+            
+            // Limpiar y ocultar el formulario
+            document.getElementById('nombreCrearCuenta').value = '';
+            document.getElementById('documentoCrearCuenta').value = '';
+            document.getElementById('claveCrearCuenta').value = '';
+            document.getElementById('crearCuentaForm').classList.add('hidden');
+            menuPrincipal.classList.remove('hidden');
+            
             cuentas = await obtenerCuentas();
             movimientos = await obtenerMovimientos();
         } catch (error) {
@@ -45,14 +62,42 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     });
 
-    document.getElementById('btnConsignar').addEventListener('click', async () => {
+    document.getElementById('btnBackCrearCuenta').addEventListener('click', () => {
+        document.getElementById('crearCuentaForm').classList.add('hidden');
+        menuPrincipal.classList.remove('hidden');
+    });
+
+    // Para el formulario de consignación
+    document.getElementById('btnConsignar').addEventListener('click', () => {
+        menuPrincipal.classList.add('hidden');
+        document.getElementById('consignarForm').classList.remove('hidden');
+    });
+
+    document.getElementById('btnSubmitConsignar').addEventListener('click', async () => {
         try {
-            await consignarDinero(cuentas, movimientos);
+            const numeroCuenta = document.getElementById('cuentaConsignar').value;
+            const valor = parseInt(document.getElementById('valorConsignar').value);
+            
+            await consignarDinero(numeroCuenta, valor, cuentas, movimientos);
+            
+            // Actualizar datos
             cuentas = await obtenerCuentas();
             movimientos = await obtenerMovimientos();
+            
+            // Limpiar y ocultar el formulario
+            document.getElementById('cuentaConsignar').value = '';
+            document.getElementById('valorConsignar').value = '';
+            document.getElementById('consignarForm').classList.add('hidden');
+            menuPrincipal.classList.remove('hidden');
+            
         } catch (error) {
             mostrarModal('Error', error.message);
         }
+    });
+
+    document.getElementById('btnBackConsignar').addEventListener('click', () => {
+        document.getElementById('consignarForm').classList.add('hidden');
+        menuPrincipal.classList.remove('hidden');
     });
 
     document.getElementById('btnLogin').addEventListener('click', () => {

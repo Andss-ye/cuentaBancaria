@@ -2,35 +2,30 @@ import { generarReferencia } from '../utils.js';
 import { guardarCuenta, guardarMovimientos } from '../db.js';
 
 // Consignar dinero a la cuenta del usuario logueado
-export async function consignarDinero(cuentas, movimientos) {
-    const numeroCuenta = prompt("Ingrese cuenta a consignar:");
-
-    // Verificamos si la cuenta existe
-    if (numeroCuenta in cuentas) {
-        const valor = parseInt(prompt("¿Cuánto desea consignar a su cuenta?"), 10);
-
-        if (valor <= 0) {
-            console.log("El valor debe ser mayor a 0");
-            return;
-        }
-
-        // Actualizamos el saldo en la cuenta correspondiente
-        cuentas[numeroCuenta].saldo += valor;
-        movimientos[numeroCuenta].push({
-            tipo: "Consignacion",
-            valor: valor,
-            referencia: generarReferencia(),
-            descripcion: "Consignación a su cuenta bancaria"
-        });
-
-        console.log(`Consignación exitosa. Su nuevo saldo es: ${cuentas[numeroCuenta].saldo}`);
-
-        // Después de actualizar los datos en memoria
-        await guardarCuenta(numeroCuenta, cuentas[numeroCuenta]);
-        await guardarMovimientos(numeroCuenta, movimientos[numeroCuenta]);
-    } else {
-        console.log(`La cuenta ${numeroCuenta} no existe.`);
+export async function consignarDinero(numeroCuenta, valor, cuentas, movimientos) {
+    if (!(numeroCuenta in cuentas)) {
+        throw new Error('La cuenta no existe');
     }
+    
+    if (valor <= 0) {
+        throw new Error('El valor debe ser mayor a 0');
+    }
+    
+    // Actualizar saldo
+    cuentas[numeroCuenta].saldo += valor;
+    if (!movimientos[numeroCuenta]) {
+        movimientos[numeroCuenta] = [];
+    }
+    
+    movimientos[numeroCuenta].push({
+        tipo: "Consignacion",
+        valor: valor,
+        referencia: generarReferencia(),
+        descripcion: "Consignación a su cuenta bancaria"
+    });
+    
+    await guardarCuenta(numeroCuenta, cuentas[numeroCuenta]);
+    await guardarMovimientos(numeroCuenta, movimientos[numeroCuenta]);
 }
 
 // Consignar dinero a otra cuenta por número de cuenta o documento
