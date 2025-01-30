@@ -276,7 +276,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('numeroCuenta').value = '';
         document.getElementById('clave').value = '';
     });
-
+    
+    document.getElementById('btnBackMovimientos').addEventListener('click', () => {
+        document.getElementById('movimientosTable').classList.add('hidden');
+        menuCliente.classList.remove('hidden');
+    });
+    
     // Agregar los event listeners faltantes del menú cliente
     document.getElementById('btnConsultarMovimientos').addEventListener('click', () => {
         try {
@@ -285,6 +290,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             mostrarModal('Error', error.message);
         }
     });
+
 
     // Cerrar modal
     document.getElementById('modalClose').addEventListener('click', () => {

@@ -36,18 +36,49 @@ export function mostrarCuenta(cuentas) {
 }
 
 // Consultar movimientos de la cuenta
+// Consultar movimientos de la cuenta
 export function consultarMovimientos(numeroCuenta, movimientos) {
-  console.log("\n\n=================== Extracto de movimientos ===================\n");
-  console.log("Tipo de movimiento".padEnd(30) + "Valor".padEnd(15) + "Referencia".padEnd(15) + "Descripción".padEnd(40));
-  if (movimientos[numeroCuenta]) {
-    for (const mov of movimientos[numeroCuenta]) {
-      console.log(
-        `${mov.tipo.padEnd(30)}${String(mov.valor).padEnd(15)}${String(mov.referencia).padEnd(15)}${mov.descripcion.padEnd(40)}\n`
-      );
-    }
+  const movimientosTable = document.getElementById('movimientosTable');
+  const movimientosTableBody = document.getElementById('movimientosTableBody');
+  const menuCliente = document.getElementById('menuCliente');
+  
+  // Limpiar tabla anterior
+  movimientosTableBody.innerHTML = '';
+  
+  if (movimientos[numeroCuenta] && movimientos[numeroCuenta].length > 0) {
+      movimientos[numeroCuenta].forEach(mov => {
+          const row = document.createElement('tr');
+          row.className = 'border-b hover:bg-gray-50';
+          
+          // Formatear el valor con signo y separadores de miles
+          const valorFormateado = new Intl.NumberFormat('es-CO', {
+              style: 'currency',
+              currency: 'COP',
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0
+          }).format(mov.valor);
+
+          row.innerHTML = `
+              <td class="px-4 py-2">${mov.tipo}</td>
+              <td class="px-4 py-2 ${mov.valor < 0 ? 'text-red-600' : 'text-green-600'}">${valorFormateado}</td>
+              <td class="px-4 py-2">${mov.referencia}</td>
+              <td class="px-4 py-2">${mov.descripcion}</td>
+          `;
+          
+          movimientosTableBody.appendChild(row);
+      });
   } else {
-    console.log("\nNo hay movimientos en la cuenta.");
+      const row = document.createElement('tr');
+      row.innerHTML = `
+          <td colspan="4" class="px-4 py-2 text-center text-gray-500">
+              No hay movimientos en la cuenta
+          </td>
+      `;
+      movimientosTableBody.appendChild(row);
   }
+  
+  menuCliente.classList.add('hidden');
+  movimientosTable.classList.remove('hidden');
 }
 
 // Login de usuario
