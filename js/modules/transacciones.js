@@ -1,5 +1,6 @@
 import { generarReferencia } from '../utils.js';
 import { guardarCuenta, guardarMovimientos } from '../db.js';
+import { mostrarModal } from '../main.js'
 
 // Consignar dinero a la cuenta del usuario logueado
 export async function consignarDinero(numeroCuenta, valor, cuentas, movimientos) {
@@ -29,153 +30,141 @@ export async function consignarDinero(numeroCuenta, valor, cuentas, movimientos)
 }
 
 // Consignar dinero a otra cuenta por número de cuenta o documento
-export async function consignarDestinatario(cuentaOrigen, cuentas, movimientos, numeroCuentaActual) {
-    const opc = parseInt(prompt("1. Consignar por número de cuenta\n2. Consignar por número de documento\nSeleccione una opción:"), 10);
+export async function consignarDestinatario(cuentaOrigen, cuentas, movimientos, numeroCuentaActual, datos) {
     let cuentaDestinatario = null;
+    let numeroCuentaDestinatario = null;
 
-    if (opc === 1) {
-        const numeroCuenta = prompt("Digite el número de cuenta del destinatario:");
-        cuentaDestinatario = cuentas[numeroCuenta];
-    } else if (opc === 2) {
-        const numeroDocumento = parseInt(prompt("Digite el número de documento del destinatario:"), 10);
-        cuentaDestinatario = Object.values(cuentas).find(cuenta => cuenta.documento === numeroDocumento);
-    } else {
-        console.log("Opción no válida");
-        return;
-    }
-
-    if (cuentaDestinatario) {
-        const valor = parseInt(prompt(`¿Cuánto desea consignar a la cuenta de ${cuentaDestinatario.nombre}?`), 10);
-
-        if (valor > cuentaOrigen.saldo) {
-            console.log("Fondos insuficientes para realizar la consignación");
-        } else if (valor <= 0) {
-            console.log("El valor a consignar debe ser mayor a cero");
-        } else {
-            cuentaOrigen.saldo -= valor;
-            cuentaDestinatario.saldo += valor;
-
-            movimientos[numeroCuentaActual].push({
-                tipo: "Transferencia",
-                valor: valor,
-                referencia: generarReferencia(),
-                descripcion: `Transferencia a cuenta de ${cuentaDestinatario.nombre}`
-            });
-
-            console.log(`Consignación exitosa. Su nuevo saldo es: ${cuentaOrigen.saldo}`);
-
-            // Después de actualizar los datos en memoria
-            await guardarCuenta(numeroCuentaActual, cuentas[numeroCuentaActual]);
-            await guardarMovimientos(numeroCuentaActual, movimientos[numeroCuentaActual]);
-
-            const menuClienteTitle = document.querySelector('#menuCliente h2');
-            menuClienteTitle.innerHTML = `
-                Bienvenido(a) ${cuentaOrigen.nombre}<br>
-                <span class="text-sm text-gray-600">
-                    Cuenta: ${numeroCuentaActual}<br>
-                    Saldo: $${cuentaOrigen.saldo}
-                </span>
-            `;
+    if (datos.metodoBusqueda === '1') {
+        numeroCuentaDestinatario = datos.destinatario;
+        cuentaDestinatario = cuentas[numeroCuentaDestinatario];
+    } else if (datos.metodoBusqueda === '2') {
+        const numeroDocumento = parseInt(datos.destinatario);
+        for (const [numCuenta, cuenta] of Object.entries(cuentas)) {
+            if (cuenta.documento === numeroDocumento) {
+                cuentaDestinatario = cuenta;
+                numeroCuentaDestinatario = numCuenta;
+                break;
+            }
         }
     } else {
-        console.log("Cuenta no encontrada");
+        throw new Error("Método de búsqueda no válido");
     }
+
+    if (!cuentaDestinatario || !numeroCuentaDestinatario) {
+        throw new Error("Cuenta no encontrada");
+    }
+
+    if (datos.valor > cuentaOrigen.saldo) {
+        throw new Error("Fondos insuficientes para realizar la consignación");
+    }
+    
+    if (datos.valor <= 0) {
+        throw new Error("El valor a consignar debe ser mayor a cero");
+    }
+
+    // Actualizar saldos
+    cuentaOrigen.saldo -= datos.valor;
+    cuentaDestinatario.saldo += datos.valor;
+
+    // Registrar movimientos
+    if (!movimientos[numeroCuentaActual]) {
+        movimientos[numeroCuentaActual] = [];
+    }
+    movimientos[numeroCuentaActual].push({
+        tipo: "Transferencia",
+        valor: -datos.valor,
+        referencia: generarReferencia(),
+        descripcion: `Transferencia enviada a cuenta de ${cuentaDestinatario.nombre}`
+    });
+
+    if (!movimientos[numeroCuentaDestinatario]) {
+        movimientos[numeroCuentaDestinatario] = [];
+    }
+    movimientos[numeroCuentaDestinatario].push({
+        tipo: "Transferencia",
+        valor: datos.valor,
+        referencia: generarReferencia(),
+        descripcion: `Transferencia recibida de ${cuentaOrigen.nombre}`
+    });
+
+    await Promise.all([
+        guardarCuenta(numeroCuentaActual, cuentaOrigen),
+        guardarCuenta(numeroCuentaDestinatario, cuentaDestinatario),
+        guardarMovimientos(numeroCuentaActual, movimientos[numeroCuentaActual]),
+        guardarMovimientos(numeroCuentaDestinatario, movimientos[numeroCuentaDestinatario])
+    ]);
+
+    mostrarModal('Éxito', `Transferencia exitosa. Su nuevo saldo es: $${cuentaOrigen.saldo.toLocaleString()}`);
 }
 
 // Retirar dinero de la cuenta logueada
-export async function retirarDinero(cuenta, movimientos, numeroCuentaActual) {
-    const valor = parseInt(prompt("¿Cuánto desea retirar de su cuenta?"), 10);
-
+export async function retirarDinero(cuenta, movimientos, numeroCuentaActual, valor) {
     if (valor > cuenta.saldo) {
-        console.log("Fondos insuficientes");
-    } else if (valor <= 0) {
-        console.log("El valor a retirar debe ser mayor a cero");
-    } else {
-        const nuevoSaldo = cuenta.saldo - valor;
-        
-        // Actualizamos solo el saldo manteniendo el resto de la información
-        await guardarCuenta(numeroCuentaActual, {
-            ...cuenta,
-            saldo: nuevoSaldo
-        });
-
-        // Actualizamos los movimientos
-        if (!movimientos[numeroCuentaActual]) {
-            movimientos[numeroCuentaActual] = [];
-        }
-        
-        movimientos[numeroCuentaActual].push({
-            tipo: "Retiro",
-            valor: valor,
-            referencia: generarReferencia(),
-            descripcion: "Retiro de cuenta"
-        });
-
-        await guardarMovimientos(numeroCuentaActual, movimientos[numeroCuentaActual]);
-        
-        console.log(`Retiro exitoso. Su nuevo saldo es: ${nuevoSaldo}`);
-        
-        const menuClienteTitle = document.querySelector('#menuCliente h2');
-        menuClienteTitle.innerHTML = `
-            Bienvenido(a) ${cuenta.nombre}<br>
-            <span class="text-sm text-gray-600">
-                Cuenta: ${numeroCuentaActual}<br>
-                Saldo: $${nuevoSaldo.toLocaleString()}
-            </span>
-        `;
+        throw new Error("Fondos insuficientes");
     }
+    
+    if (valor <= 0) {
+        throw new Error("El valor a retirar debe ser mayor a cero");
+    }
+
+    const nuevoSaldo = cuenta.saldo - valor;
+    
+    await guardarCuenta(numeroCuentaActual, {
+        ...cuenta,
+        saldo: nuevoSaldo
+    });
+
+    if (!movimientos[numeroCuentaActual]) {
+        movimientos[numeroCuentaActual] = [];
+    }
+    
+    movimientos[numeroCuentaActual].push({
+        tipo: "Retiro",
+        valor: valor,
+        referencia: generarReferencia(),
+        descripcion: "Retiro de cuenta"
+    });
+
+    await guardarMovimientos(numeroCuentaActual, movimientos[numeroCuentaActual]);
+    
+    mostrarModal('Éxito', `Retiro exitoso. Su nuevo saldo es: $${nuevoSaldo.toLocaleString()}`);
 }
 
 // Pagar servicios
-export async function pagarServicios(cuenta, movimientos, numeroCuentaActual) {
-    console.log("Seleccione el servicio que desea pagar:\n1. Agua\n2. Gas\n3. Energía");
+export async function pagarServicios(cuenta, movimientos, numeroCuentaActual, datos) {
     const servicios = { 1: "Agua", 2: "Gas", 3: "Energía" };
-    const opc = parseInt(prompt("Ingrese su opción:"), 10);
-
-    if (servicios[opc]) {
-        const referencia = prompt("Ingrese la referencia del recibo:");
-        const valor = parseInt(prompt("Ingrese el valor del recibo:"), 10);
-
-        if (valor > cuenta.saldo) {
-            console.log("Fondos insuficientes para pagar el servicio");
-        } else if (valor <= 0) {
-            console.log("El valor del recibo debe ser mayor a cero");
-        } else {
-            const nuevoSaldo = cuenta.saldo - valor;
-
-            // Actualizamos la cuenta con el nuevo saldo
-            await guardarCuenta(numeroCuentaActual, {
-                ...cuenta,
-                saldo: nuevoSaldo
-            });
-
-            // Actualizamos los movimientos
-            if (!movimientos[numeroCuentaActual]) {
-                movimientos[numeroCuentaActual] = [];
-            }
-
-            movimientos[numeroCuentaActual].push({
-                tipo: "Pago Servicio",
-                valor: valor,
-                referencia: referencia,
-                descripcion: `Pago de servicio de ${servicios[opc]}`
-            });
-
-            await guardarMovimientos(numeroCuentaActual, movimientos[numeroCuentaActual]);
-
-            console.log(`Pago exitoso. Su nuevo saldo es: ${nuevoSaldo}`);
-
-            // Actualizamos la información mostrada en la interfaz
-            const menuClienteTitle = document.querySelector('#menuCliente h2');
-            menuClienteTitle.innerHTML = `
-                Bienvenido(a) ${cuenta.nombre}<br>
-                <span class="text-sm text-gray-600">
-                    Cuenta: ${numeroCuentaActual}<br>
-                    Saldo: $${nuevoSaldo.toLocaleString()}
-                </span>
-            `;
-        }
-    } else {
-        console.log("Opción no válida");
+    
+    if (!servicios[datos.tipoServicio]) {
+        throw new Error("Servicio no válido");
     }
+
+    if (datos.valor > cuenta.saldo) {
+        throw new Error("Fondos insuficientes para pagar el servicio");
+    }
+    
+    if (datos.valor <= 0) {
+        throw new Error("El valor del servicio debe ser mayor a cero");
+    }
+
+    const nuevoSaldo = cuenta.saldo - datos.valor;
+
+    await guardarCuenta(numeroCuentaActual, {
+        ...cuenta,
+        saldo: nuevoSaldo
+    });
+
+    if (!movimientos[numeroCuentaActual]) {
+        movimientos[numeroCuentaActual] = [];
+    }
+
+    movimientos[numeroCuentaActual].push({
+        tipo: "Pago Servicio",
+        valor: datos.valor,
+        referencia: datos.referencia,
+        descripcion: `Pago de servicio de ${servicios[datos.tipoServicio]}`
+    });
+
+    await guardarMovimientos(numeroCuentaActual, movimientos[numeroCuentaActual]);
+
+    mostrarModal('Éxito', `Pago exitoso. Su nuevo saldo es: $${nuevoSaldo.toLocaleString()}`);
 }

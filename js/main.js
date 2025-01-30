@@ -25,10 +25,22 @@ async function inicializarDatos() {
 }
 
 // Función para mostrar modal
-function mostrarModal(titulo, mensaje) {
+export function mostrarModal(titulo, mensaje) {
     document.getElementById('modalTitle').textContent = titulo;
     document.getElementById('modalMessage').textContent = mensaje;
     modal.classList.remove('hidden');
+}
+
+// Función para actualizar la información del usuario en el menú
+function actualizarInfoUsuario(numeroCuenta) {
+    const menuClienteTitle = document.querySelector('#menuCliente h2');
+    menuClienteTitle.innerHTML = `
+        Bienvenido(a) ${cuentas[numeroCuenta].nombre}<br>
+        <span class="text-sm text-gray-600">
+            Cuenta: ${numeroCuenta}<br>
+            Saldo: $${cuentas[numeroCuenta].saldo.toLocaleString()}
+        </span>
+    `;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -57,6 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             cuentas = await obtenerCuentas();
             movimientos = await obtenerMovimientos();
+            actualizarInfoUsuario(cuentaActual);
         } catch (error) {
             mostrarModal('Error', error.message);
         }
@@ -83,6 +96,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Actualizar datos
             cuentas = await obtenerCuentas();
             movimientos = await obtenerMovimientos();
+            actualizarInfoUsuario(cuentaActual);
             
             // Limpiar y ocultar el formulario
             document.getElementById('cuentaConsignar').value = '';
@@ -134,13 +148,124 @@ document.addEventListener('DOMContentLoaded', async () => {
         menuPrincipal.classList.remove('hidden')
     })
 
-    // Botones del menú cliente
-    document.getElementById('btnConsignarOtra').addEventListener('click', async () => {
+    // Event listeners para Consignar a Destinatario
+    document.getElementById('btnConsignarOtra').addEventListener('click', () => {
+        menuCliente.classList.add('hidden');
+        document.getElementById('consignarDestinatarioForm').classList.remove('hidden');
+    });
+
+    document.getElementById('metodoBusqueda').addEventListener('change', (e) => {
+        const label = document.querySelector('[for="destinatarioInput"]');
+        if (e.target.value === '1') {
+            label.textContent = 'Número de Cuenta';
+        } else {
+            label.textContent = 'Número de Documento';
+        }
+    });
+
+    document.getElementById('btnSubmitConsignarDestinatario').addEventListener('click', async () => {
         try {
-            await consignarDestinatario(cuentas[cuentaActual], cuentas, movimientos, cuentaActual);
+            const metodoBusqueda = document.getElementById('metodoBusqueda').value;
+            const destinatario = document.getElementById('destinatarioInput').value;
+            const valor = parseInt(document.getElementById('valorConsignarDestinatario').value);
+            
+            await consignarDestinatario(cuentas[cuentaActual], cuentas, movimientos, cuentaActual, {
+                metodoBusqueda,
+                destinatario,
+                valor
+            });
+            
+            // Actualizar datos
+            cuentas = await obtenerCuentas();
+            movimientos = await obtenerMovimientos();
+            actualizarInfoUsuario(cuentaActual);
+            
+            // Limpiar y ocultar formulario
+            document.getElementById('destinatarioInput').value = '';
+            document.getElementById('valorConsignarDestinatario').value = '';
+            document.getElementById('consignarDestinatarioForm').classList.add('hidden');
+            menuCliente.classList.remove('hidden');
+            
         } catch (error) {
             mostrarModal('Error', error.message);
         }
+    });
+
+    // Event listeners para Retirar Dinero
+    document.getElementById('btnRetirar').addEventListener('click', () => {
+        menuCliente.classList.add('hidden');
+        document.getElementById('retirarForm').classList.remove('hidden');
+    });
+
+    document.getElementById('btnSubmitRetirar').addEventListener('click', async () => {
+        try {
+            const valor = parseInt(document.getElementById('valorRetirar').value);
+            
+            await retirarDinero(cuentas[cuentaActual], movimientos, cuentaActual, valor);
+            
+            // Actualizar datos
+            cuentas = await obtenerCuentas();
+            movimientos = await obtenerMovimientos();
+            actualizarInfoUsuario(cuentaActual);
+            
+            // Limpiar y ocultar formulario
+            document.getElementById('valorRetirar').value = '';
+            document.getElementById('retirarForm').classList.add('hidden');
+            menuCliente.classList.remove('hidden');
+            
+        } catch (error) {
+            mostrarModal('Error', error.message);
+        }
+    });
+
+    // Event listeners para Pagar Servicios
+    document.getElementById('btnPagarServicios').addEventListener('click', () => {
+        menuCliente.classList.add('hidden');
+        document.getElementById('pagarServiciosForm').classList.remove('hidden');
+    });
+
+    document.getElementById('btnSubmitPagarServicio').addEventListener('click', async () => {
+        try {
+            const tipoServicio = document.getElementById('tipoServicio').value;
+            const referencia = document.getElementById('referenciaServicio').value;
+            const valor = parseInt(document.getElementById('valorServicio').value);
+            
+            await pagarServicios(cuentas[cuentaActual], movimientos, cuentaActual, {
+                tipoServicio,
+                referencia,
+                valor
+            });
+            
+            // Actualizar datos
+            cuentas = await obtenerCuentas();
+            movimientos = await obtenerMovimientos();
+            actualizarInfoUsuario(cuentaActual);
+            
+            // Limpiar y ocultar formulario
+            document.getElementById('referenciaServicio').value = '';
+            document.getElementById('valorServicio').value = '';
+            document.getElementById('pagarServiciosForm').classList.add('hidden');
+            menuCliente.classList.remove('hidden');
+            
+        } catch (error) {
+            mostrarModal('Error', error.message);
+        }
+    });
+
+    // Botones de regresar
+    document.getElementById('btnBackConsignarDestinatario').addEventListener('click', () => {
+        document.getElementById('consignarDestinatarioForm').classList.add('hidden');
+        menuCliente.classList.remove('hidden');
+    });
+
+    document.getElementById('btnBackRetirar').addEventListener('click', () => {
+        document.getElementById('retirarForm').classList.add('hidden');
+        menuCliente.classList.remove('hidden');
+    });
+
+    document.getElementById('btnBackPagarServicio').addEventListener('click', () => {
+        document.getElementById('pagarServiciosForm').classList.add('hidden');
+        menuCliente.classList.remove('hidden');
     });
 
     // Agregar botón de cerrar sesión
@@ -153,26 +278,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Agregar los event listeners faltantes del menú cliente
-    document.getElementById('btnRetirar').addEventListener('click', async () => {
-        try {
-            await retirarDinero(cuentas[cuentaActual], movimientos, cuentaActual);
-            cuentas = await obtenerCuentas();
-            movimientos = await obtenerMovimientos();
-        } catch (error) {
-            mostrarModal('Error', error.message);
-        }
-    });
-
-    document.getElementById('btnPagarServicios').addEventListener('click', async () => {
-        try {
-            await pagarServicios(cuentas[cuentaActual], movimientos, cuentaActual);
-            cuentas = await obtenerCuentas();
-            movimientos = await obtenerMovimientos();
-        } catch (error) {
-            mostrarModal('Error', error.message);
-        }
-    });
-
     document.getElementById('btnConsultarMovimientos').addEventListener('click', () => {
         try {
             consultarMovimientos(cuentaActual, movimientos);
