@@ -24,43 +24,22 @@ export async function crearCuenta(nombre, documento, clave, cuentas, movimientos
     return `\n===================== | Bienvenido ${nombre.toUpperCase()} | ===================== \n\nEl número de su cuenta es: ${numeroCuenta}\n`;
 }
 
-// Mostrar cuentas (para pruebas)
-export function mostrarCuenta(cuentas) {
-  console.log("\n\n=================== Mostrar Datos Cuenta ===================");
-  console.log("CUENTA".padEnd(15) + "DOCUMENTO".padEnd(15) + "NOMBRE".padEnd(15) + "SALDO".padEnd(15));
-  for (const [numeroCuenta, cuenta] of Object.entries(cuentas)) {
-    console.log(
-      `${numeroCuenta.padEnd(15)}${String(cuenta.documento).padEnd(15)}${cuenta.nombre.padEnd(15)}${String(cuenta.saldo).padEnd(15)}\n`
-    );
-  }
-}
-
-// Consultar movimientos de la cuenta
 // Consultar movimientos de la cuenta
 export function consultarMovimientos(numeroCuenta, movimientos) {
   const movimientosTable = document.getElementById('movimientosTable');
   const movimientosTableBody = document.getElementById('movimientosTableBody');
   const menuCliente = document.getElementById('menuCliente');
   
-  // Limpiar tabla anterior
   movimientosTableBody.innerHTML = '';
   
   if (movimientos[numeroCuenta] && movimientos[numeroCuenta].length > 0) {
       movimientos[numeroCuenta].forEach(mov => {
           const row = document.createElement('tr');
           row.className = 'border-b hover:bg-gray-50';
-          
-          // Formatear el valor con signo y separadores de miles
-          const valorFormateado = new Intl.NumberFormat('es-CO', {
-              style: 'currency',
-              currency: 'COP',
-              minimumFractionDigits: 0,
-              maximumFractionDigits: 0
-          }).format(mov.valor);
 
           row.innerHTML = `
               <td class="px-4 py-2">${mov.tipo}</td>
-              <td class="px-4 py-2 ${mov.valor < 0 ? 'text-red-600' : 'text-green-600'}">${valorFormateado}</td>
+              <td class="px-4 py-2 ${mov.valor < 0 ? 'text-red-600' : 'text-green-600'}">${mov.valor}</td>
               <td class="px-4 py-2">${mov.referencia}</td>
               <td class="px-4 py-2">${mov.descripcion}</td>
           `;
@@ -79,19 +58,4 @@ export function consultarMovimientos(numeroCuenta, movimientos) {
   
   menuCliente.classList.add('hidden');
   movimientosTable.classList.remove('hidden');
-}
-
-// Login de usuario
-export function login(cuentas) {
-  const numeroCuenta = prompt("Escriba su número de cuenta: ");
-  const clave = prompt("Escriba su clave: ");
-  const cuenta = cuentas[numeroCuenta]; // Verifica que la cuenta exista
-
-  if (cuenta) {
-    if (clave === cuenta.clave) {
-      return numeroCuenta; // Retorna para obtener los datos del usuario
-    }
-    return null;
-  }
-  return null;
 }

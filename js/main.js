@@ -1,5 +1,5 @@
 // Importar módulos
-import { crearCuenta, login, mostrarCuenta, consultarMovimientos } from './modules/cuentas.js';
+import { crearCuenta, consultarMovimientos } from './modules/cuentas.js';
 import { consignarDinero, consignarDestinatario, retirarDinero, pagarServicios } from './modules/transacciones.js';
 import { initDB, obtenerCuentas, obtenerMovimientos } from './db.js';
 
