@@ -69,7 +69,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             cuentas = await obtenerCuentas();
             movimientos = await obtenerMovimientos();
-            actualizarInfoUsuario(cuentaActual);
         } catch (error) {
             mostrarModal('Error', error.message);
         }
@@ -91,12 +90,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const numeroCuenta = document.getElementById('cuentaConsignar').value;
             const valor = parseInt(document.getElementById('valorConsignar').value);
             
-            await consignarDinero(numeroCuenta, valor, cuentas, movimientos);
+            const mensaje = await consignarDinero(numeroCuenta, valor, cuentas, movimientos);
+            mostrarModal('Exito', mensaje)
             
             // Actualizar datos
             cuentas = await obtenerCuentas();
             movimientos = await obtenerMovimientos();
-            actualizarInfoUsuario(cuentaActual);
             
             // Limpiar y ocultar el formulario
             document.getElementById('cuentaConsignar').value = '';
@@ -105,6 +104,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             menuPrincipal.classList.remove('hidden');
             
         } catch (error) {
+            console.log(error)
             mostrarModal('Error', error.message);
         }
     });

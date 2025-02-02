@@ -27,6 +27,8 @@ export async function consignarDinero(numeroCuenta, valor, cuentas, movimientos)
     
     await guardarCuenta(numeroCuenta, cuentas[numeroCuenta]);
     await guardarMovimientos(numeroCuenta, movimientos[numeroCuenta]);
+
+    return `Se consigno $${valor} a la cuenta ${numeroCuenta}`
 }
 
 // Consignar dinero a otra cuenta por número de cuenta o documento
