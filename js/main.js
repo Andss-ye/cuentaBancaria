@@ -296,4 +296,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('modalClose').addEventListener('click', () => {
         modal.classList.add('hidden');
     });
+
+    // Animación del menú principal
+    menuPrincipal.style.opacity = '0';
+    menuPrincipal.style.transform = 'translateY(150px)';
+    menuPrincipal.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+
+    setTimeout(() => {
+        menuPrincipal.style.opacity = '5';
+        menuPrincipal.style.transform = 'translateY(0)';
+    }, 100);
 });
