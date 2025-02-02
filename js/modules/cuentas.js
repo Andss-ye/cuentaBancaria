@@ -3,7 +3,7 @@ import { guardarCuenta, guardarMovimientos } from '../db.js';
 import { validacionCuenta } from './validaciones.js';
 
 // Crear una cuenta personalizada para cada usuario
-export async function crearCuenta(nombre, documento, clave, cuentas, movimientos) {
+export async function crearCuenta(nombre, documento, clave, cuentas) {
     if (nombre === "") {
         throw new Error("El nombre no puede estar vacío");
     }
